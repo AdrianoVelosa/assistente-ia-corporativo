@@ -51,7 +51,7 @@ wget https://huggingface.co/TheBloke/Llama-3-8B-Instruct-GGUF/resolve/main/llama
 
 ```bash
 # Clonar este repositório ou copiar os arquivos para o servidor
-git clone [URL_DO_REPOSITORIO] /opt/assistente-ia
+git clone https://github.com/AdrianoVelosa/assistente-ia-corporativo.git /opt/assistente-ia
 cd /opt/assistente-ia
 
 # Criar ambiente virtual
