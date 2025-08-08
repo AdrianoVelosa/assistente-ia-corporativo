@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Assistente IA Corporativo - Histórico{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">Histórico de Perguntas</h3>
+            </div>
+            <div class="card-body">
+                {% if history %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Data/Hora</th>
+                                <th>Usuário</th>
+                                <th>Pergunta</th>
+                                <th>Resposta</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in history|reverse %}
+                            <tr>
+                                <td>{{ item.timestamp }}</td>
+                                <td>{{ item.user }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary toggle-content" data-bs-toggle="collapse" data-bs-target="#question-{{ loop.index }}">
+                                        {{ item.question[:50] }}{% if item.question|length > 50 %}...{% endif %}
+                                    </button>
+                                    <div class="collapse mt-2" id="question-{{ loop.index }}">
+                                        <div class="card card-body bg-light">
+                                            {{ item.question }}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-secondary toggle-content" data-bs-toggle="collapse" data-bs-target="#response-{{ loop.index }}">
+                                        {{ item.response[:50] }}{% if item.response|length > 50 %}...{% endif %}
+                                    </button>
+                                    <div class="collapse mt-2" id="response-{{ loop.index }}">
+                                        <div class="card card-body bg-light">
+                                            {{ item.response }}
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <p>Nenhum histórico de perguntas encontrado.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .toggle-content {
+        text-align: left;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 300px;
+    }
+    
+    @media (max-width: 768px) {
+        .toggle-content {
+            max-width: 150px;
+        }
+    }
+</style>
+{% endblock %}

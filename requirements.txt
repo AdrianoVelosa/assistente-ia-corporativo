@@ -1,0 +1,33 @@
+# Requisitos para o Assistente IA Corporativo
+
+# Framework web
+flask==2.3.3
+Werkzeug==2.3.7
+Jinja2==3.1.2
+itsdangerous==2.1.2
+click==8.1.7
+
+# Extensões Flask
+flask-session==0.5.0
+flask-wtf==1.1.1
+flask-login==0.6.2
+
+# Segurança
+python-dotenv==1.0.0
+pyjwt==2.8.0
+
+# Utilitários
+requests==2.31.0
+python-dateutil==2.8.2
+
+# Servidor WSGI para produção
+gunicorn==21.2.0
+
+# Logging
+logging-formatter-anticrlf==1.4.1
+
+# Para futuras expansões (integração com SharePoint e File Server)
+# Descomente conforme necessário
+# office365-rest-python-client==2.4.0  # Para SharePoint Online
+# pysmb==1.2.9  # Para File Server (SMB/CIFS)
+# msal==1.22.0  # Para autenticação Microsoft

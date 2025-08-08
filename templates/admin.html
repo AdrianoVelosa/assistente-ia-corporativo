@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+
+{% block title %}Assistente IA Corporativo - Administração{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">Painel de Administração</h3>
+            </div>
+            <div class="card-body">
+                <p class="lead">Bem-vindo ao painel de administração, <strong>{{ session.username }}</strong>!</p>
+                <p>Aqui você pode gerenciar usuários e configurações do sistema.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Adicionar Novo Usuário</h4>
+            </div>
+            <div class="card-body">
+                <div id="user-alert" class="alert d-none" role="alert"></div>
+                
+                <form id="add-user-form">
+                    <div class="mb-3">
+                        <label for="new-username" class="form-label">Nome de Usuário</label>
+                        <input type="text" class="form-control" id="new-username" name="new-username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new-password" class="form-label">Senha</label>
+                        <input type="password" class="form-control" id="new-password" name="new-password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new-role" class="form-label">Função</label>
+                        <select class="form-select" id="new-role" name="new-role">
+                            <option value="user">Usuário</option>
+                            <option value="admin">Administrador</option>
+                        </select>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <span id="add-user-text">Adicionar Usuário</span>
+                            <span id="add-user-spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Configurações do Modelo</h4>
+            </div>
+            <div class="card-body">
+                <div id="model-alert" class="alert d-none" role="alert"></div>
+                
+                <form id="model-settings-form">
+                    <div class="mb-3">
+                        <label for="model-path" class="form-label">Caminho do Modelo</label>
+                        <input type="text" class="form-control" id="model-path" name="model-path" value="{{ model_path }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="context-size" class="form-label">Tamanho do Contexto</label>
+                        <input type="number" class="form-control" id="context-size" name="context-size" value="{{ context_size }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="temperature" class="form-label">Temperatura</label>
+                        <input type="number" class="form-control" id="temperature" name="temperature" value="{{ temperature }}" step="0.1" min="0" max="2" required>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <span id="save-settings-text">Salvar Configurações</span>
+                            <span id="save-settings-spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        const addUserForm = $('#add-user-form');
+        const userAlert = $('#user-alert');
+        const addUserText = $('#add-user-text');
+        const addUserSpinner = $('#add-user-spinner');
+        
+        // Manipulador para adicionar usuário
+        addUserForm.on('submit', function(e) {
+            e.preventDefault();
+            
+            // Esconder alerta
+            userAlert.addClass('d-none');
+            
+            // Mostrar spinner
+            addUserText.addClass('d-none');
+            addUserSpinner.removeClass('d-none');
+            
+            // Desabilitar formulário
+            addUserForm.find('input, select, button').prop('disabled', true);
+            
+            // Preparar dados
+            const userData = {
+                username: $('#new-username').val(),
+                password: $('#new-password').val(),
+                role: $('#new-role').val()
+            };
+            
+            // Enviar dados
+            $.ajax({
+                url: '/admin/add_user',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(userData),
+                success: function(data) {
+                    if (data.success) {
+                        userAlert.removeClass('alert-danger').addClass('alert-success')
+                            .text('Usuário adicionado com sucesso!').removeClass('d-none');
+                        addUserForm[0].reset();
+                    } else {
+                        userAlert.removeClass('alert-success').addClass('alert-danger')
+                            .text(data.error || 'Erro ao adicionar usuário').removeClass('d-none');
+                    }
+                },
+                error: function(xhr) {
+                    let errorMsg = 'Erro ao conectar com o servidor';
+                    if (xhr.responseJSON && xhr.responseJSON.error) {
+                        errorMsg = xhr.responseJSON.error;
+                    }
+                    userAlert.removeClass('alert-success').addClass('alert-danger')
+                        .text(errorMsg).removeClass('d-none');
+                },
+                complete: function() {
+                    // Reabilitar formulário e esconder spinner
+                    addUserForm.find('input, select, button').prop('disabled', false);
+                    addUserText.removeClass('d-none');
+                    addUserSpinner.addClass('d-none');
+                }
+            });
+        });
+        
+        // Aqui você pode adicionar código para o formulário de configurações do modelo
+        // Semelhante ao código acima para o formulário de adicionar usuário
+    });
+</script>
+{% endblock %}

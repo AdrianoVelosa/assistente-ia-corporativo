@@ -1,0 +1,65 @@
+# Arquivos e diretórios específicos do Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Ambiente virtual
+venv/
+env/
+ENV/
+
+# Arquivos de configuração local
+.env
+
+# Logs
+*.log
+logs/
+
+# Arquivos de banco de dados SQLite
+*.sqlite3
+*.db
+
+# Arquivos de modelo LLaMA (geralmente grandes)
+*.gguf
+*.bin
+
+# Diretório do llama.cpp (se estiver no mesmo repositório)
+llama.cpp/
+
+# Arquivos de cache
+.cache/
+
+# Arquivos de IDE e editores
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
+
+# Arquivos temporários
+tmp/
+temp/
+
+# Arquivos de histórico de perguntas (se armazenados localmente)
+history/

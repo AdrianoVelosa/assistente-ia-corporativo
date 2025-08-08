@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Assistente IA Corporativo - Login{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">Login</h3>
+            </div>
+            <div class="card-body">
+                <div id="login-alert" class="alert alert-danger d-none" role="alert"></div>
+                
+                <form id="login-form">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Usuário</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Senha</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <span id="login-text">Entrar</span>
+                            <span id="login-spinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        const loginForm = $('#login-form');
+        const loginAlert = $('#login-alert');
+        const loginText = $('#login-text');
+        const loginSpinner = $('#login-spinner');
+        
+        loginForm.on('submit', function(e) {
+            e.preventDefault();
+            
+            // Esconder alerta de erro
+            loginAlert.addClass('d-none');
+            
+            // Mostrar spinner
+            loginText.addClass('d-none');
+            loginSpinner.removeClass('d-none');
+            
+            // Desabilitar formulário
+            loginForm.find('input, button').prop('disabled', true);
+            
+            // Enviar dados de login
+            $.ajax({
+                url: '/login',
+                type: 'POST',
+                data: loginForm.serialize(),
+                success: function(data) {
+                    if (data.success) {
+                        window.location.href = data.redirect || '/';
+                    } else {
+                        loginAlert.text(data.message || 'Erro ao fazer login').removeClass('d-none');
+                        loginForm.find('input, button').prop('disabled', false);
+                        loginText.removeClass('d-none');
+                        loginSpinner.addClass('d-none');
+                    }
+                },
+                error: function() {
+                    loginAlert.text('Erro ao conectar com o servidor').removeClass('d-none');
+                    loginForm.find('input, button').prop('disabled', false);
+                    loginText.removeClass('d-none');
+                    loginSpinner.addClass('d-none');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card {
+        margin-top: 2rem;
+    }
+</style>
+{% endblock %}
