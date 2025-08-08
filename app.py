@@ -13,6 +13,7 @@ import logging
 import uuid
 from flask_migrate import Migrate
 from models import db, User, QueryHistory, Setting
+from config import get_config
 
 # Configuração de logging
 logging.basicConfig(
