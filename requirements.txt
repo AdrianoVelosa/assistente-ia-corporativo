@@ -11,6 +11,8 @@ click==8.1.7
 flask-session==0.5.0
 flask-wtf==1.1.1
 flask-login==0.6.2
+flask-sqlalchemy==3.0.5
+flask-migrate==4.0.4
 
 # Segurança
 python-dotenv==1.0.0
@@ -25,6 +27,10 @@ gunicorn==21.2.0
 
 # Logging
 logging-formatter-anticrlf==1.4.1
+
+# Banco de dados
+# SQLite já vem com Python, não precisa ser instalado
+# psycopg2-binary==2.9.6  # Descomente para usar PostgreSQL
 
 # Para futuras expansões (integração com SharePoint e File Server)
 # Descomente conforme necessário

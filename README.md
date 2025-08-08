@@ -6,9 +6,10 @@ Uma aplicação web corporativa em Flask que funciona como um assistente de IA p
 
 - Interface web simples com campo de entrada e área de resposta
 - Execução do modelo LLaMA 3 8B quantizado via llama.cpp
-- Autenticação de usuários
-- Histórico de perguntas
-- Painel de administração
+- Autenticação de usuários com banco de dados SQLite/PostgreSQL
+- Histórico de perguntas persistente
+- Painel de administração para gerenciamento de usuários
+- Banco de dados relacional para armazenamento de dados
 - Preparado para expansão com integração com SharePoint e File Server
 
 ## Requisitos do Sistema
@@ -69,7 +70,62 @@ FLASK_CONFIG=production
 SECRET_KEY=$(python -c 'import secrets; print(secrets.token_hex(32))')
 LLAMA_PATH=/opt/llama.cpp
 MODEL_PATH=/opt/llama.cpp/models/llama-3-8b-instruct.Q4_K_M.gguf
+# Para usar PostgreSQL em produção, descomente a linha abaixo
+# DATABASE_URL=postgresql://usuario:senha@localhost/assistente_ia
 EOL
+
+# Inicializar o banco de dados
+python init_db.py
+```
+
+## Banco de Dados
+
+A aplicação utiliza SQLAlchemy para gerenciar o banco de dados, com suporte para:
+
+- SQLite (padrão para desenvolvimento)
+- PostgreSQL (recomendado para produção)
+
+### Estrutura do Banco de Dados
+
+- **users**: Armazena informações dos usuários (credenciais, perfis, etc.)
+- **query_history**: Registra o histórico de perguntas e respostas
+- **settings**: Configurações do sistema (opcional)
+
+### Migrações
+
+O sistema utiliza Flask-Migrate para gerenciar migrações do banco de dados:
+
+```bash
+# Inicializar migrações (primeira vez)
+flask db init
+
+# Criar uma nova migração após alterar modelos
+flask db migrate -m "descrição da migração"
+
+# Aplicar migrações pendentes
+flask db upgrade
+```
+
+### Backup e Restauração
+
+#### SQLite
+
+```bash
+# Backup
+sqlite3 app.db .dump > backup_$(date +%Y%m%d).sql
+
+# Restauração
+sqlite3 app.db < backup_20240808.sql
+```
+
+#### PostgreSQL
+
+```bash
+# Backup
+pg_dump -U usuario -d assistente_ia -f backup_$(date +%Y%m%d).sql
+
+# Restauração
+psql -U usuario -d assistente_ia -f backup_20240808.sql
 ```
 
 ## Executando a Aplicação

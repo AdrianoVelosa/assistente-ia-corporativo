@@ -3,45 +3,60 @@
 # Utiliza modelo LLaMA 3 8B quantizado via llama.cpp
 
 import os
+import sys
 import subprocess
 import tempfile
-from flask import Flask, render_template, request, jsonify, session
-from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from werkzeug.utils import secure_filename
+from datetime import datetime, timedelta
 import logging
 import uuid
+from flask_migrate import Migrate
+from models import db, User, QueryHistory, Setting
 
 # Configuração de logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler("app.log"),
-        logging.StreamHandler()
+        logging.StreamHandler(sys.stdout)
     ]
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('assistente-ia')
 
 # Inicialização da aplicação Flask
 app = Flask(__name__)
+app.config.from_object(get_config())
 app.secret_key = os.environ.get('SECRET_KEY', str(uuid.uuid4()))
+
+# Inicializar o banco de dados
+db.init_app(app)
+migrate = Migrate(app, db)
+
+# Criar as tabelas do banco de dados se não existirem
+with app.app_context():
+    db.create_all()
+    
+    # Verificar se existe um usuário admin, se não, criar um
+    admin = User.query.filter_by(username='admin').first()
+    if not admin:
+        admin = User(username='admin', role='admin')
+        admin.set_password('admin123')
+        db.session.add(admin)
+        
+        # Adicionar também um usuário comum
+        user = User(username='user', role='user')
+        user.set_password('user123')
+        db.session.add(user)
+        
+        db.session.commit()
+        logger.info("Usuários padrão criados: admin e user")
 
 # Configurações do modelo LLaMA
 LLAMA_PATH = os.environ.get('LLAMA_PATH', '/opt/llama.cpp')
 MODEL_PATH = os.environ.get('MODEL_PATH', '/opt/llama.cpp/models/llama-3-8b-instruct.Q4_K_M.gguf')
 CONTEXT_SIZE = os.environ.get('CONTEXT_SIZE', '4096')
 TEMPERATURE = os.environ.get('TEMPERATURE', '0.7')
-
-# Simulação de banco de dados de usuários (em produção, use um banco de dados real)
-users_db = {
-    'admin': {
-        'password': generate_password_hash('admin123'),
-        'role': 'admin'
-    }
-}
-
-# Histórico de perguntas (em produção, use um banco de dados real)
-query_history = []
 
 # Função para executar o modelo LLaMA
 def run_llama_model(prompt):
@@ -103,9 +118,17 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         
-        if username in users_db and check_password_hash(users_db[username]['password'], password):
+        user = User.query.filter_by(username=username).first()
+        
+        if user and user.check_password(password):
             session['username'] = username
-            session['role'] = users_db[username]['role']
+            session['role'] = user.role
+            session['user_id'] = user.id
+            
+            # Atualizar último login
+            user.last_login = datetime.utcnow()
+            db.session.commit()
+            
             logger.info(f"Usuário {username} logado com sucesso")
             return jsonify({'success': True, 'redirect': '/'})
         else:
@@ -119,12 +142,13 @@ def login():
 def logout():
     session.pop('username', None)
     session.pop('role', None)
+    session.pop('user_id', None)
     return render_template('login.html')
 
 # Rota para processar perguntas
 @app.route('/ask', methods=['POST'])
 def ask():
-    if 'username' not in session:
+    if 'username' not in session or 'user_id' not in session:
         return jsonify({'error': 'Não autorizado'}), 401
     
     data = request.get_json()
@@ -133,26 +157,23 @@ def ask():
     if not question:
         return jsonify({'error': 'Pergunta vazia'}), 400
     
-    # Registrar a pergunta no histórico
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    query_record = {
-        'user': session['username'],
-        'question': question,
-        'timestamp': timestamp
-    }
-    
     # Processar a pergunta com o modelo LLaMA
     response = run_llama_model(question)
     
-    # Adicionar resposta ao registro
-    query_record['response'] = response
-    query_history.append(query_record)
+    # Registrar a pergunta no histórico
+    query_record = QueryHistory(
+        user_id=session['user_id'],
+        question=question,
+        response=response
+    )
+    db.session.add(query_record)
+    db.session.commit()
     
     logger.info(f"Pergunta processada: {question[:50]}...")
     
     return jsonify({
         'response': response,
-        'timestamp': timestamp
+        'timestamp': query_record.timestamp.strftime("%Y-%m-%d %H:%M:%S")
     })
 
 # Rota para visualizar histórico (apenas para administradores)
@@ -161,7 +182,20 @@ def history():
     if 'username' not in session or session.get('role') != 'admin':
         return jsonify({'error': 'Não autorizado'}), 401
     
-    return render_template('history.html', history=query_history)
+    # Buscar histórico de perguntas do banco de dados
+    history_records = QueryHistory.query.order_by(QueryHistory.timestamp.desc()).all()
+    history_list = []
+    
+    for record in history_records:
+        user = User.query.get(record.user_id)
+        history_list.append({
+            'user': user.username if user else 'Usuário desconhecido',
+            'question': record.question,
+            'response': record.response,
+            'timestamp': record.timestamp.strftime("%Y-%m-%d %H:%M:%S")
+        })
+    
+    return render_template('history.html', history=history_list)
 
 # Rota para administração (apenas para administradores)
 @app.route('/admin')
@@ -181,17 +215,30 @@ def add_user():
     new_username = data.get('username')
     new_password = data.get('password')
     new_role = data.get('role', 'user')
+    new_email = data.get('email')
+    new_full_name = data.get('full_name')
+    new_department = data.get('department')
     
     if not new_username or not new_password:
         return jsonify({'error': 'Usuário e senha são obrigatórios'}), 400
     
-    if new_username in users_db:
+    # Verificar se o usuário já existe
+    if User.query.filter_by(username=new_username).first():
         return jsonify({'error': 'Usuário já existe'}), 400
     
-    users_db[new_username] = {
-        'password': generate_password_hash(new_password),
-        'role': new_role
-    }
+    # Criar novo usuário
+    new_user = User(
+        username=new_username,
+        role=new_role,
+        email=new_email,
+        full_name=new_full_name,
+        department=new_department
+    )
+    new_user.set_password(new_password)
+    
+    # Salvar no banco de dados
+    db.session.add(new_user)
+    db.session.commit()
     
     logger.info(f"Novo usuário adicionado: {new_username}")
     

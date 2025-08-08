@@ -25,6 +25,10 @@ class Config:
     # Configurações de upload (para futuras expansões)
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB
+    
+    # Configurações do banco de dados
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///app.db'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 # Configurações de desenvolvimento
 class DevelopmentConfig(Config):
